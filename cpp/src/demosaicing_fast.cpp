@@ -1,4 +1,4 @@
-#include "kernels/demosaicing_fast.hpp"
+#include "bilinear/demosaicing_fast.hpp"
 
 #include <algorithm>
 #include <condition_variable>

@@ -11,8 +11,8 @@ bgr = demosaicing(bayer, code)
 
 The package keeps one public API and two internal implementations:
 
-- a pure Python reference backend used as the correctness spec
-- a native nanobind backend used by default for the hot demosaicing kernel
+- a pure Python/NumPy backend used as the correctness spec and fallback
+- a native nanobind backend used as an accelerator when available
 
 ## Supported API
 
@@ -46,20 +46,21 @@ Backend selection is controlled by `BILINEAR_BACKEND`:
 
 | Value | Behavior |
 | :---- | :------- |
-| `native` | Use the nanobind/C++ backend. This is the default. |
-| `python` | Use the pure Python reference backend. |
-| `auto` | Try native first, then fall back to Python if native is unavailable. |
+| `auto` | Use native when available, otherwise warn and fall back to Python. This is the default. |
+| `native` | Require the nanobind/C++ backend; fail if unavailable. |
+| `python` | Use the pure Python/NumPy backend. |
 
 Examples:
 
 ```bash
+python -c "import bilinear; print(bilinear.backend())"
 BILINEAR_BACKEND=native uv run python scripts/benchmark.py
 BILINEAR_BACKEND=python uv run pytest
 ```
 
-The default `native` mode intentionally does not silently fall back. If the
-extension is unavailable, set `BILINEAR_BACKEND=python` or build/sync the
-project environment.
+Use `BILINEAR_BACKEND=native` in CI or benchmarking when native performance is
+required. The default `auto` mode keeps the package importable on platforms
+where the extension is unavailable.
 
 ## Development
 
@@ -95,7 +96,8 @@ uv run --locked python scripts/benchmark.py --iterations 10 --warmup 2
 The benchmark's default `--dtype both` runs `uint8`, `uint16`, `float32`, and
 `float64`. It uses `cv2.demosaicing` for integer inputs and a `cv2.filter2D`
 bilinear baseline for floating-point inputs, because OpenCV's Bayer demosaicing
-accepts only 8-bit and 16-bit integer input.
+accepts only 8-bit and 16-bit integer input. OpenCV is a development dependency
+for tests and scripts, not a runtime dependency of `bilinear`.
 
 ## Project Layout
 
@@ -103,16 +105,16 @@ accepts only 8-bit and 16-bit integer input.
 src/bilinear/
   api.py          public validation and dispatch
   _backend.py     BILINEAR_BACKEND selection
-  _reference.py   pure Python reference implementation
   _native.pyi     internal native stub
+  _python/        pure Python fallback implementation
   demosaicing.py  compatibility re-export
 
 cpp/
-  bindings.cpp
-  kernels/demosaicing.cpp
-  kernels/demosaicing_fast.cpp
-  kernels/demosaicing.hpp
-  kernels/demosaicing_fast.hpp
+  bindings/_native.cpp
+  include/bilinear/demosaicing.hpp
+  include/bilinear/demosaicing_fast.hpp
+  src/demosaicing.cpp
+  src/demosaicing_fast.cpp
 
 tests/
   test_demosaicing.py

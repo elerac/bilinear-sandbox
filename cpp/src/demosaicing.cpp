@@ -1,4 +1,4 @@
-#include "kernels/demosaicing.hpp"
+#include "bilinear/demosaicing.hpp"
 
 #include <stdexcept>
 #include <type_traits>

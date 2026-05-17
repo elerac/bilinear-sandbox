@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from ._backend import impl
+from ._backend import native
+from ._python import demosaicing as _python_demosaicing
 
 
 RGGB = "RGGB"
@@ -45,7 +46,23 @@ def demosaicing(
 
     bayer = np.ascontiguousarray(bayer)
     pattern = _CODE_PATTERNS[code]
+    output = np.empty((*bayer.shape, 3), dtype=bayer.dtype)
+
+    if bayer.shape[0] < 3 or bayer.shape[1] < 3:
+        output.fill(0)
+        return output
+
+    mod = native()
+    if mod is None:
+        if fast:
+            _python_demosaicing._demosaic_bgr_fast_into(bayer, output, pattern)
+        else:
+            _python_demosaicing._demosaic_bgr_into(bayer, output, pattern)
+        return output
 
     if fast:
-        return impl._demosaic_bgr_fast(bayer, pattern)
-    return impl._demosaic_bgr(bayer, pattern)
+        mod._demosaic_bgr_fast_into(bayer, output, pattern)
+    else:
+        mod._demosaic_bgr_into(bayer, output, pattern)
+
+    return output

@@ -110,10 +110,10 @@ def run_benchmark_section(
     reference_result: np.ndarray | None = None
     reference_times: list[float] | None = None
     if include_reference:
-        from bilinear import _reference
+        from bilinear._python import demosaicing as python_demosaicing
 
         reference_result, reference_times = benchmark(
-            lambda: _reference._demosaic_bgr(mosaic, pattern),
+            lambda: python_demosaicing._demosaic_bgr(mosaic, pattern),
             warmup=warmup,
             iterations=iterations,
         )

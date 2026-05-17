@@ -4,13 +4,15 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def _demosaic_bgr(
+def _demosaic_bgr_into(
     bayer: NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64],
+    output: NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64],
     pattern: str,
-) -> NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64]: ...
+) -> None: ...
 
 
-def _demosaic_bgr_fast(
+def _demosaic_bgr_fast_into(
     bayer: NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64],
+    output: NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64],
     pattern: str,
-) -> NDArray[np.uint8] | NDArray[np.uint16] | NDArray[np.float32] | NDArray[np.float64]: ...
+) -> None: ...

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16...3.30)
+cmake_minimum_required(VERSION 3.18...3.30)
 
 project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
 
@@ -13,13 +13,13 @@ find_package(Threads REQUIRED)
 nanobind_add_module(
   _native
   NOMINSIZE
-  cpp/bindings.cpp
-  cpp/kernels/demosaicing.cpp
-  cpp/kernels/demosaicing_fast.cpp
+  cpp/bindings/_native.cpp
+  cpp/src/demosaicing.cpp
+  cpp/src/demosaicing_fast.cpp
 )
 
 target_compile_features(_native PRIVATE cxx_std_17)
-target_include_directories(_native PRIVATE cpp)
+target_include_directories(_native PRIVATE cpp/include)
 target_link_libraries(_native PRIVATE Threads::Threads)
 
 install(TARGETS _native LIBRARY DESTINATION bilinear)

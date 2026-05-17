@@ -7,6 +7,8 @@ import cv2
 import numpy as np
 import pytest
 
+from bilinear._python import demosaicing as python_demosaicing
+
 
 COLOR_CODES = [
     cv2.COLOR_BayerRGGB2BGR,
@@ -34,7 +36,7 @@ def restore_backend_after_test() -> None:
 def test_native_matches_reference_for_shapes(dtype: type[np.generic], shape: tuple[int, int], code: int, fast: bool) -> None:
     src = random_bayer(shape, dtype)
 
-    expected = run_with_backend("python", src, code, fast=fast)
+    expected = run_python_implementation(src, code, fast=fast)
     actual = run_with_backend("native", src, code, fast=fast)
 
     assert actual.shape == expected.shape
@@ -51,7 +53,7 @@ def test_native_matches_reference_for_layouts(dtype: type[np.generic], layout: s
     src = layout_case(layout, dtype)
     before = src.copy()
 
-    expected = run_with_backend("python", src, code, fast=fast)
+    expected = run_python_implementation(src, code, fast=fast)
     actual = run_with_backend("native", src, code, fast=fast)
 
     np.testing.assert_array_equal(src, before)
@@ -65,10 +67,7 @@ def test_native_matches_reference_for_layouts(dtype: type[np.generic], layout: s
 def test_python_fast_accepts_supported_dtypes(dtype: type[np.generic]) -> None:
     src = random_bayer((7, 9), dtype)
     actual = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR, fast=True)
-    if np.issubdtype(dtype, np.floating):
-        expected = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR, fast=False)
-    else:
-        expected = cv2.demosaicing(np.ascontiguousarray(src), cv2.COLOR_BayerRGGB2BGR)
+    expected = run_python_implementation(src, cv2.COLOR_BayerRGGB2BGR, fast=True)
 
     assert actual.shape == (*src.shape, 3)
     assert actual.dtype == src.dtype
@@ -105,6 +104,26 @@ def run_with_backend(backend: str, src: np.ndarray, code: int, fast: bool = True
     return api.demosaicing(src, code, fast=fast)
 
 
+def run_python_implementation(src: np.ndarray, code: int, fast: bool = True) -> np.ndarray:
+    bayer = np.ascontiguousarray(src)
+    pattern = code_to_pattern(code)
+    if fast:
+        return python_demosaicing._demosaic_bgr_fast(bayer, pattern)
+    return python_demosaicing._demosaic_bgr(bayer, pattern)
+
+
+def code_to_pattern(code: int) -> str:
+    if code == cv2.COLOR_BayerRGGB2BGR:
+        return "RGGB"
+    if code == cv2.COLOR_BayerGRBG2BGR:
+        return "GRBG"
+    if code == cv2.COLOR_BayerBGGR2BGR:
+        return "BGGR"
+    if code == cv2.COLOR_BayerGBRG2BGR:
+        return "GBRG"
+    raise AssertionError(f"unsupported test code: {code}")
+
+
 def assert_demosaicing_matches(actual: np.ndarray, expected: np.ndarray, fast: bool) -> None:
     if fast and np.issubdtype(actual.dtype, np.floating):
         np.testing.assert_allclose(actual, expected, rtol=0, atol=np.finfo(actual.dtype).eps * 64)
@@ -119,7 +138,9 @@ def reload_api_modules():
 
     importlib.reload(bilinear._backend)
     api = importlib.reload(bilinear.api)
-    bilinear.demosaicing = api.demosaicing
+    demosaicing_module = importlib.import_module("bilinear.demosaicing")
+    importlib.reload(demosaicing_module)
+    importlib.reload(bilinear)
     return api
 
 

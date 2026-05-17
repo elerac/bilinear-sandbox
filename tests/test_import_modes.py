@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import subprocess
 import sys
 from types import ModuleType
 from typing import Any
@@ -22,16 +23,42 @@ def restore_backend_after_test() -> None:
     reload_api_modules()
 
 
-def test_default_backend_is_native() -> None:
+def test_default_backend_is_auto_preferring_native_when_available() -> None:
     os.environ.pop("BILINEAR_BACKEND", None)
 
     api = reload_api_modules()
 
+    import bilinear
+
+    assert bilinear.backend() == "native"
+    assert bilinear.native_error() is None
+    assert api.demosaicing(np.zeros((3, 3), dtype=np.uint8), cv2.COLOR_BayerRGGB2BGR).shape == (3, 3, 3)
+
+
+def test_can_force_python_backend() -> None:
+    os.environ["BILINEAR_BACKEND"] = "python"
+
+    reload_api_modules()
+
+    import bilinear
     import bilinear._backend as backend
 
-    assert backend._BACKEND == "native"
-    assert backend.impl.__name__ == "bilinear._native"
-    assert api.demosaicing(np.zeros((3, 3), dtype=np.uint8), cv2.COLOR_BayerRGGB2BGR).shape == (3, 3, 3)
+    assert bilinear.backend() == "python"
+    assert backend.native() is None
+    assert bilinear.native_error() is None
+
+
+def test_can_force_native_backend() -> None:
+    os.environ["BILINEAR_BACKEND"] = "native"
+
+    reload_api_modules()
+
+    import bilinear
+    import bilinear._backend as backend
+
+    assert bilinear.backend() == "native"
+    assert backend.native() is not None
+    assert bilinear.native_error() is None
 
 
 def test_legacy_module_import_keeps_package_api() -> None:
@@ -57,7 +84,7 @@ def test_invalid_backend_value_is_rejected() -> None:
 
     import bilinear._backend as backend
 
-    with pytest.raises(ValueError, match="BILINEAR_BACKEND"):
+    with pytest.raises(RuntimeError, match="BILINEAR_BACKEND"):
         importlib.reload(backend)
 
 
@@ -68,24 +95,41 @@ def test_native_backend_unavailable_message() -> None:
     with without_native_module(bilinear):
         os.environ["BILINEAR_BACKEND"] = "native"
 
-        with pytest.raises(ImportError, match="Native backend is unavailable"):
+        with pytest.raises(RuntimeError, match="native extension could not be imported"):
             importlib.reload(backend)
 
 
-def test_auto_backend_falls_back_to_reference_when_native_unavailable() -> None:
+def test_auto_backend_warns_and_falls_back_to_python_when_native_unavailable() -> None:
     import bilinear
 
     with without_native_module(bilinear):
         os.environ["BILINEAR_BACKEND"] = "auto"
-        api = reload_api_modules()
+        with pytest.warns(RuntimeWarning, match="using the pure Python backend"):
+            api = reload_api_modules()
 
-        import bilinear._backend as backend
+        import bilinear
 
-        assert backend.impl.__name__ == "bilinear._reference"
+        assert bilinear.backend() == "python"
+        assert bilinear.native_error() is not None
         actual = api.demosaicing(np.zeros((3, 3), dtype=np.uint8), cv2.COLOR_BayerRGGB2BGR)
 
     expected = run_python(np.zeros((3, 3), dtype=np.uint8), cv2.COLOR_BayerRGGB2BGR)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test_pure_backend_import_smoke() -> None:
+    env = os.environ.copy()
+    env["BILINEAR_BACKEND"] = "python"
+
+    proc = subprocess.run(
+        [sys.executable, "-c", "import bilinear; assert bilinear.backend() == 'python'"],
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert proc.returncode == 0
 
 
 class without_native_module:
@@ -124,5 +168,7 @@ def reload_api_modules():
 
     importlib.reload(bilinear._backend)
     api = importlib.reload(bilinear.api)
-    bilinear.demosaicing = api.demosaicing
+    demosaicing_module = importlib.import_module("bilinear.demosaicing")
+    importlib.reload(demosaicing_module)
+    importlib.reload(bilinear)
     return api

@@ -1,7 +1,4 @@
-from bilinear.demosaicing import demosaicing
+from bilinear._backend import backend, native_error
+from bilinear.api import BGGR, GBRG, GRBG, RGGB, demosaicing
 
-__all__ = ["demosaicing", "main"]
-
-
-def main() -> None:
-    print("Hello from bilinear-sandbox!")
+__all__ = ["BGGR", "GBRG", "GRBG", "RGGB", "backend", "demosaicing", "native_error"]

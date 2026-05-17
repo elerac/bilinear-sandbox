@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "kernels/demosaicing.hpp"
+#include "bilinear/demosaicing.hpp"
 
 namespace bilinear {
 

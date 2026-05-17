@@ -8,22 +8,22 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
-    { name = "opencv-python" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "opencv-python" },
     { name = "pytest" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=2.4.5" },
-    { name = "opencv-python", specifier = ">=4.13.0.92" },
-]
+requires-dist = [{ name = "numpy", specifier = ">=2.4.5" }]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.3" }]
+dev = [
+    { name = "opencv-python", specifier = ">=4.13.0.92" },
+    { name = "pytest", specifier = ">=9.0.3" },
+]
 
 [[package]]
 name = "colorama"

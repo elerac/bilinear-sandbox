@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import cv2
 import numpy as np
 
 
@@ -17,16 +16,23 @@ _PATTERN_POSITIONS = {
     GBRG: {"G1": (0, 0), "B": (0, 1), "R": (1, 0), "G2": (1, 1)},
 }
 
-_PATTERN_CODES = {
-    RGGB: cv2.COLOR_BayerRGGB2BGR,
-    GRBG: cv2.COLOR_BayerGRBG2BGR,
-    BGGR: cv2.COLOR_BayerBGGR2BGR,
-    GBRG: cv2.COLOR_BayerGBRG2BGR,
-}
-
 
 def _demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:
+    output = np.zeros((*bayer.shape, 3), dtype=bayer.dtype)
+    _demosaic_bgr_into(bayer, output, pattern)
+    return output
+
+
+def _demosaic_bgr_fast(bayer: np.ndarray, pattern: str) -> np.ndarray:
+    return _demosaic_bgr(bayer, pattern)
+
+
+def _demosaic_bgr_into(bayer: np.ndarray, output: np.ndarray, pattern: str) -> None:
     height, width = bayer.shape
+    output[...] = 0
+    if height < 3 or width < 3:
+        return
+
     if np.issubdtype(bayer.dtype, np.floating):
         work = bayer
         avg2 = _float_avg2
@@ -39,10 +45,6 @@ def _demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:
     blue = np.zeros((height, width), dtype=work.dtype)
     green = np.zeros((height, width), dtype=work.dtype)
     red = np.zeros((height, width), dtype=work.dtype)
-
-    if height < 3 or width < 3:
-        return np.stack((blue, green, red), axis=2).astype(bayer.dtype)
-
     positions = _PATTERN_POSITIONS[pattern]
 
     for y in range(1, height - 1):
@@ -89,84 +91,13 @@ def _demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:
     for channel in (blue, green, red):
         _copy_inner_border(channel)
 
-    return np.stack((blue, green, red), axis=2).astype(bayer.dtype)
+    output[..., 0] = blue.astype(bayer.dtype, copy=False)
+    output[..., 1] = green.astype(bayer.dtype, copy=False)
+    output[..., 2] = red.astype(bayer.dtype, copy=False)
 
 
-def _demosaic_bgr_fast(bayer: np.ndarray, pattern: str) -> np.ndarray:
-    height, width = bayer.shape
-    if height < 3 or width < 3:
-        return np.zeros((height, width, 3), dtype=bayer.dtype)
-
-    if bayer.dtype in (np.uint8, np.uint16):
-        return cv2.demosaicing(bayer, _PATTERN_CODES[pattern])
-
-    return _filter2d_demosaic_bgr(bayer, pattern)
-
-
-def _filter2d_demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:
-    height, width = bayer.shape
-    output = np.zeros((height, width, 3), dtype=bayer.dtype)
-
-    kernel_dtype = bayer.dtype
-    cross_kernel = np.array(
-        [[0.0, 0.25, 0.0], [0.25, 0.0, 0.25], [0.0, 0.25, 0.0]],
-        dtype=kernel_dtype,
-    )
-    diagonal_kernel = np.array(
-        [[0.25, 0.0, 0.25], [0.0, 0.0, 0.0], [0.25, 0.0, 0.25]],
-        dtype=kernel_dtype,
-    )
-    horizontal_kernel = np.array(
-        [[0.0, 0.0, 0.0], [0.5, 0.0, 0.5], [0.0, 0.0, 0.0]],
-        dtype=kernel_dtype,
-    )
-    vertical_kernel = np.array(
-        [[0.0, 0.5, 0.0], [0.0, 0.0, 0.0], [0.0, 0.5, 0.0]],
-        dtype=kernel_dtype,
-    )
-
-    cross = cv2.filter2D(bayer, -1, cross_kernel, borderType=cv2.BORDER_CONSTANT)
-    diagonal = cv2.filter2D(bayer, -1, diagonal_kernel, borderType=cv2.BORDER_CONSTANT)
-    horizontal = cv2.filter2D(bayer, -1, horizontal_kernel, borderType=cv2.BORDER_CONSTANT)
-    vertical = cv2.filter2D(bayer, -1, vertical_kernel, borderType=cv2.BORDER_CONSTANT)
-
-    positions = _PATTERN_POSITIONS[pattern]
-    red_mask = _parity_mask(bayer.shape, positions["R"])
-    blue_mask = _parity_mask(bayer.shape, positions["B"])
-    green1_mask = _parity_mask(bayer.shape, positions["G1"])
-    green2_mask = _parity_mask(bayer.shape, positions["G2"])
-
-    blue = output[..., 0]
-    green = output[..., 1]
-    red = output[..., 2]
-
-    red[red_mask] = bayer[red_mask]
-    green[red_mask] = cross[red_mask]
-    blue[red_mask] = diagonal[red_mask]
-
-    blue[blue_mask] = bayer[blue_mask]
-    green[blue_mask] = cross[blue_mask]
-    red[blue_mask] = diagonal[blue_mask]
-
-    for green_mask, green_position in ((green1_mask, positions["G1"]), (green2_mask, positions["G2"])):
-        green[green_mask] = bayer[green_mask]
-        if _horizontal_neighbors_are_red(green_position[0], green_position[1], positions):
-            red[green_mask] = horizontal[green_mask]
-            blue[green_mask] = vertical[green_mask]
-        else:
-            blue[green_mask] = horizontal[green_mask]
-            red[green_mask] = vertical[green_mask]
-
-    for channel in (blue, green, red):
-        _copy_inner_border(channel)
-
-    return output
-
-
-def _parity_mask(shape: tuple[int, int], parity: tuple[int, int]) -> np.ndarray:
-    mask = np.zeros(shape, dtype=bool)
-    mask[parity[0] :: 2, parity[1] :: 2] = True
-    return mask
+def _demosaic_bgr_fast_into(bayer: np.ndarray, output: np.ndarray, pattern: str) -> None:
+    _demosaic_bgr_into(bayer, output, pattern)
 
 
 def _int_avg2(a: int, b: int) -> int:
