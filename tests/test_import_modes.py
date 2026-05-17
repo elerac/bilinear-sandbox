@@ -80,7 +80,7 @@ def test_legacy_module_import_keeps_package_api() -> None:
 
 
 def test_invalid_backend_value_is_rejected() -> None:
-    os.environ["BILINEAR_BACKEND"] = "fast"
+    os.environ["BILINEAR_BACKEND"] = "invalid"
 
     import bilinear._backend as backend
 

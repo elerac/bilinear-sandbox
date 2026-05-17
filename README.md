@@ -17,7 +17,7 @@ The package keeps one public API and two internal implementations:
 ## Supported API
 
 ```python
-demosaicing(src, code, fast=True)
+demosaicing(src, code)
 ```
 
 `src` must be a 2D Bayer image with dtype `numpy.uint8`, `numpy.uint16`,
@@ -26,8 +26,7 @@ The result is a new C-contiguous BGR image with shape `(height, width, 3)` and
 the same dtype as the input. Integer inputs use OpenCV-compatible rounded
 averages; floating-point inputs use true real-valued averages with no clamping.
 
-The native backend uses the optimized C++ kernel by default; pass `fast=False`
-to use the simpler baseline C++ implementation.
+The native backend uses the optimized C++ kernel when available.
 
 Supported OpenCV-compatible bilinear BGR conversion code values:
 
@@ -112,9 +111,7 @@ src/bilinear/
 cpp/
   bindings/_native.cpp
   include/bilinear/demosaicing.hpp
-  include/bilinear/demosaicing_fast.hpp
   src/demosaicing.cpp
-  src/demosaicing_fast.cpp
 
 tests/
   test_demosaicing.py

@@ -15,7 +15,6 @@ nanobind_add_module(
   NOMINSIZE
   cpp/bindings/_native.cpp
   cpp/src/demosaicing.cpp
-  cpp/src/demosaicing_fast.cpp
 )
 
 target_compile_features(_native PRIVATE cxx_std_17)

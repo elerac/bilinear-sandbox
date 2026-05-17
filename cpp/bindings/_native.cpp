@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "bilinear/demosaicing.hpp"
-#include "bilinear/demosaicing_fast.hpp"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -47,22 +46,6 @@ void demosaic_bgr_into(BayerImage<T> bayer, BgrOutput<T> output, std::string_vie
     }
 }
 
-template <typename T>
-void demosaic_bgr_fast_into(BayerImage<T> bayer, BgrOutput<T> output, std::string_view pattern_name) {
-    check_output_shape(bayer, output);
-
-    const bilinear::BayerPattern pattern = bilinear::parse_pattern(pattern_name);
-    const std::size_t height = bayer.shape(0);
-    const std::size_t width = bayer.shape(1);
-    const T *bayer_ptr = bayer.data();
-    T *output_ptr = output.data();
-
-    {
-        nb::gil_scoped_release release;
-        bilinear::demosaic_bgr_fast(bayer_ptr, output_ptr, height, width, pattern);
-    }
-}
-
 }  // namespace
 
 NB_MODULE(_native, m) {
@@ -90,34 +73,6 @@ NB_MODULE(_native, m) {
     m.def(
         "_demosaic_bgr_into",
         &demosaic_bgr_into<double>,
-        "bayer"_a.noconvert(),
-        "output"_a.noconvert(),
-        "pattern"_a
-    );
-    m.def(
-        "_demosaic_bgr_fast_into",
-        &demosaic_bgr_fast_into<std::uint8_t>,
-        "bayer"_a.noconvert(),
-        "output"_a.noconvert(),
-        "pattern"_a
-    );
-    m.def(
-        "_demosaic_bgr_fast_into",
-        &demosaic_bgr_fast_into<std::uint16_t>,
-        "bayer"_a.noconvert(),
-        "output"_a.noconvert(),
-        "pattern"_a
-    );
-    m.def(
-        "_demosaic_bgr_fast_into",
-        &demosaic_bgr_fast_into<float>,
-        "bayer"_a.noconvert(),
-        "output"_a.noconvert(),
-        "pattern"_a
-    );
-    m.def(
-        "_demosaic_bgr_fast_into",
-        &demosaic_bgr_fast_into<double>,
         "bayer"_a.noconvert(),
         "output"_a.noconvert(),
         "pattern"_a

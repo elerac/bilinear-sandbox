@@ -32,55 +32,53 @@ def restore_backend_after_test() -> None:
 @pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32, np.float64])
 @pytest.mark.parametrize("shape", [(0, 0), (0, 5), (5, 0), (1, 1), (2, 5), (5, 2), (7, 9)])
 @pytest.mark.parametrize("code", COLOR_CODES)
-@pytest.mark.parametrize("fast", [False, True])
-def test_native_matches_reference_for_shapes(dtype: type[np.generic], shape: tuple[int, int], code: int, fast: bool) -> None:
+def test_native_matches_reference_for_shapes(dtype: type[np.generic], shape: tuple[int, int], code: int) -> None:
     src = random_bayer(shape, dtype)
 
-    expected = run_python_implementation(src, code, fast=fast)
-    actual = run_with_backend("native", src, code, fast=fast)
+    expected = run_python_implementation(src, code)
+    actual = run_with_backend("native", src, code)
 
     assert actual.shape == expected.shape
     assert actual.dtype == expected.dtype
     assert actual.flags.c_contiguous
-    assert_demosaicing_matches(actual, expected, fast=fast)
+    assert_demosaicing_matches(actual, expected)
 
 
 @pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32, np.float64])
 @pytest.mark.parametrize("layout", ["contiguous", "sliced", "transposed"])
 @pytest.mark.parametrize("code", COLOR_CODES)
-@pytest.mark.parametrize("fast", [False, True])
-def test_native_matches_reference_for_layouts(dtype: type[np.generic], layout: str, code: int, fast: bool) -> None:
+def test_native_matches_reference_for_layouts(dtype: type[np.generic], layout: str, code: int) -> None:
     src = layout_case(layout, dtype)
     before = src.copy()
 
-    expected = run_python_implementation(src, code, fast=fast)
-    actual = run_with_backend("native", src, code, fast=fast)
+    expected = run_python_implementation(src, code)
+    actual = run_with_backend("native", src, code)
 
     np.testing.assert_array_equal(src, before)
     assert actual.shape == expected.shape
     assert actual.dtype == expected.dtype
     assert actual.flags.c_contiguous
-    assert_demosaicing_matches(actual, expected, fast=fast)
+    assert_demosaicing_matches(actual, expected)
 
 
 @pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32, np.float64])
-def test_python_fast_accepts_supported_dtypes(dtype: type[np.generic]) -> None:
+def test_python_backend_accepts_supported_dtypes(dtype: type[np.generic]) -> None:
     src = random_bayer((7, 9), dtype)
-    actual = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR, fast=True)
-    expected = run_python_implementation(src, cv2.COLOR_BayerRGGB2BGR, fast=True)
+    actual = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR)
+    expected = run_python_implementation(src, cv2.COLOR_BayerRGGB2BGR)
 
     assert actual.shape == (*src.shape, 3)
     assert actual.dtype == src.dtype
     assert actual.flags.c_contiguous
-    assert_demosaicing_matches(actual, expected, fast=True)
+    assert_demosaicing_matches(actual, expected)
 
 
 @pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.float32, np.float64])
 @pytest.mark.parametrize("shape", [(0, 0), (0, 5), (5, 0), (1, 1), (2, 5), (5, 2)])
-def test_python_fast_returns_zeros_for_small_images(dtype: type[np.generic], shape: tuple[int, int]) -> None:
+def test_python_backend_returns_zeros_for_small_images(dtype: type[np.generic], shape: tuple[int, int]) -> None:
     src = random_bayer(shape, dtype)
 
-    actual = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR, fast=True)
+    actual = run_with_backend("python", src, cv2.COLOR_BayerRGGB2BGR)
 
     assert actual.shape == (*shape, 3)
     assert actual.dtype == src.dtype
@@ -98,17 +96,15 @@ def test_backend_modes(backend: str) -> None:
     np.testing.assert_array_equal(actual, expected)
 
 
-def run_with_backend(backend: str, src: np.ndarray, code: int, fast: bool = True) -> np.ndarray:
+def run_with_backend(backend: str, src: np.ndarray, code: int) -> np.ndarray:
     os.environ["BILINEAR_BACKEND"] = backend
     api = reload_api_modules()
-    return api.demosaicing(src, code, fast=fast)
+    return api.demosaicing(src, code)
 
 
-def run_python_implementation(src: np.ndarray, code: int, fast: bool = True) -> np.ndarray:
+def run_python_implementation(src: np.ndarray, code: int) -> np.ndarray:
     bayer = np.ascontiguousarray(src)
     pattern = code_to_pattern(code)
-    if fast:
-        return python_demosaicing._demosaic_bgr_fast(bayer, pattern)
     return python_demosaicing._demosaic_bgr(bayer, pattern)
 
 
@@ -124,8 +120,8 @@ def code_to_pattern(code: int) -> str:
     raise AssertionError(f"unsupported test code: {code}")
 
 
-def assert_demosaicing_matches(actual: np.ndarray, expected: np.ndarray, fast: bool) -> None:
-    if fast and np.issubdtype(actual.dtype, np.floating):
+def assert_demosaicing_matches(actual: np.ndarray, expected: np.ndarray) -> None:
+    if np.issubdtype(actual.dtype, np.floating):
         np.testing.assert_allclose(actual, expected, rtol=0, atol=np.finfo(actual.dtype).eps * 64)
     else:
         np.testing.assert_array_equal(actual, expected)

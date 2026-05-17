@@ -26,14 +26,12 @@ _CODE_PATTERNS = {
 def demosaicing(
     src: NDArray[np.generic],
     code: int,
-    fast: bool = True,
 ) -> NDArray[np.generic]:
     """Convert a Bayer image to BGR color with bilinear interpolation.
 
     The public interface intentionally mirrors the simple OpenCV call shape:
     ``cv2.demosaicing(src, code)``. Only 3-channel bilinear Bayer conversion
-    codes are supported. By default, the native backend uses the optimized C++
-    kernel. Pass ``fast=False`` to use the simpler baseline CPU implementation.
+    codes are supported.
     """
 
     bayer = np.asarray(src)
@@ -54,15 +52,9 @@ def demosaicing(
 
     mod = native()
     if mod is None:
-        if fast:
-            _python_demosaicing._demosaic_bgr_fast_into(bayer, output, pattern)
-        else:
-            _python_demosaicing._demosaic_bgr_into(bayer, output, pattern)
+        _python_demosaicing._demosaic_bgr_into(bayer, output, pattern)
         return output
 
-    if fast:
-        mod._demosaic_bgr_fast_into(bayer, output, pattern)
-    else:
-        mod._demosaic_bgr_into(bayer, output, pattern)
+    mod._demosaic_bgr_into(bayer, output, pattern)
 
     return output

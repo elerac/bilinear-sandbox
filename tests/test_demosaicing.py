@@ -18,17 +18,15 @@ COLOR_CODES = [
 @pytest.mark.parametrize("dtype,max_value", [(np.uint8, 256), (np.uint16, 65536)])
 @pytest.mark.parametrize("shape", [(1, 1), (2, 2), (3, 3), (5, 7), (20, 21)])
 @pytest.mark.parametrize("code", COLOR_CODES)
-@pytest.mark.parametrize("fast", [False, True])
 def test_color_demosaicing_matches_opencv(
     dtype: type[np.generic],
     max_value: int,
     shape: tuple[int, int],
     code: int,
-    fast: bool,
 ) -> None:
     src = random_bayer(shape, dtype, max_value)
 
-    actual = demosaicing(src, code, fast=fast)
+    actual = demosaicing(src, code)
     expected = cv2.demosaicing(src, code)
 
     np.testing.assert_array_equal(actual, expected)
@@ -37,13 +35,11 @@ def test_color_demosaicing_matches_opencv(
 @pytest.mark.parametrize("dtype,max_value", [(np.uint8, 255), (np.uint16, 65535)])
 @pytest.mark.parametrize("shape", [(3, 3), (4, 6), (7, 9), (20, 21)])
 @pytest.mark.parametrize("code", COLOR_CODES)
-@pytest.mark.parametrize("fast", [False, True])
 def test_color_demosaicing_edge_cases(
     dtype: type[np.generic],
     max_value: int,
     shape: tuple[int, int],
     code: int,
-    fast: bool,
 ) -> None:
     cases = [
         np.zeros(shape, dtype=dtype),
@@ -52,23 +48,20 @@ def test_color_demosaicing_edge_cases(
     ]
 
     for src in cases:
-        actual = demosaicing(src, code, fast=fast)
+        actual = demosaicing(src, code)
         expected = cv2.demosaicing(src, code)
         np.testing.assert_array_equal(actual, expected)
 
 
-def test_default_demosaicing_uses_fast_result() -> None:
+def test_rejects_removed_fast_keyword() -> None:
     src = random_bayer((20, 21), np.uint8, 256)
 
-    actual = demosaicing(src, cv2.COLOR_BayerRGGB2BGR)
-    expected = demosaicing(src, cv2.COLOR_BayerRGGB2BGR, fast=True)
-
-    np.testing.assert_array_equal(actual, expected)
+    with pytest.raises(TypeError, match="fast"):
+        demosaicing(src, cv2.COLOR_BayerRGGB2BGR, fast=True)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("fast", [False, True])
-def test_float_demosaicing_uses_true_averages(dtype: type[np.floating], fast: bool) -> None:
+def test_float_demosaicing_uses_true_averages(dtype: type[np.floating]) -> None:
     src = np.array(
         [
             [0.0, 1.5, 2.25, 3.75, 4.5],
@@ -80,7 +73,7 @@ def test_float_demosaicing_uses_true_averages(dtype: type[np.floating], fast: bo
         dtype=dtype,
     )
 
-    actual = demosaicing(src, cv2.COLOR_BayerRGGB2BGR, fast=fast)
+    actual = demosaicing(src, cv2.COLOR_BayerRGGB2BGR)
 
     assert actual.dtype == dtype
     assert_float_array_matches(

@@ -96,13 +96,8 @@ def run_benchmark_section(
     iterations: int,
     include_reference: bool,
 ) -> None:
-    fast_result, fast_times = benchmark(
-        lambda: demosaicing(mosaic, code, fast=True),
-        warmup=warmup,
-        iterations=iterations,
-    )
-    slow_result, slow_times = benchmark(
-        lambda: demosaicing(mosaic, code, fast=False),
+    bilinear_result, bilinear_times = benchmark(
+        lambda: demosaicing(mosaic, code),
         warmup=warmup,
         iterations=iterations,
     )
@@ -117,8 +112,7 @@ def run_benchmark_section(
             warmup=warmup,
             iterations=iterations,
         )
-    fast_vs_slow_stats = diff_stats(fast_result, slow_result)
-    reference_stats = diff_stats(fast_result, reference_result) if reference_result is not None else None
+    reference_stats = diff_stats(bilinear_result, reference_result) if reference_result is not None else None
 
     if not np.issubdtype(mosaic.dtype, np.floating):
         opencv_label = "opencv"
@@ -137,20 +131,22 @@ def run_benchmark_section(
 
     print(f"dtype: {mosaic.dtype}")
     print(f"bayer shape: {mosaic.shape}, dtype: {mosaic.dtype}")
-    print_timing("bilinear cpu fast", fast_times)
-    print_timing("bilinear cpu slow", slow_times)
+    print_timing("bilinear", bilinear_times)
     if reference_times is not None:
         print_timing("bilinear reference", reference_times)
     print_timing(opencv_label, opencv_times)
-    print(f"fast vs slow speedup: {statistics.median(slow_times) / statistics.median(fast_times):.2f}x")
     if reference_times is not None:
-        print(f"fast vs reference speedup: {statistics.median(reference_times) / statistics.median(fast_times):.2f}x")
-    print(f"fast/{opencv_label} speed ratio: {statistics.median(fast_times) / statistics.median(opencv_times):.2f}x")
-    print_diff_stats("cpu fast vs slow", fast_vs_slow_stats)
-    print_diff_stats(f"cpu fast vs {opencv_label}", diff_stats(fast_result, opencv_result))
-    print_diff_stats(f"cpu slow vs {opencv_label}", diff_stats(slow_result, opencv_result))
+        print(
+            "bilinear vs reference speedup: "
+            f"{statistics.median(reference_times) / statistics.median(bilinear_times):.2f}x"
+        )
+    print(
+        f"bilinear/{opencv_label} speed ratio: "
+        f"{statistics.median(bilinear_times) / statistics.median(opencv_times):.2f}x"
+    )
+    print_diff_stats(f"bilinear vs {opencv_label}", diff_stats(bilinear_result, opencv_result))
     if reference_stats is not None:
-        print_diff_stats("cpu fast vs reference", reference_stats)
+        print_diff_stats("bilinear vs reference", reference_stats)
 
 
 def opencv_filter2d_demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:

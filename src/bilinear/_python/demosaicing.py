@@ -23,10 +23,6 @@ def _demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:
     return output
 
 
-def _demosaic_bgr_fast(bayer: np.ndarray, pattern: str) -> np.ndarray:
-    return _demosaic_bgr(bayer, pattern)
-
-
 def _demosaic_bgr_into(bayer: np.ndarray, output: np.ndarray, pattern: str) -> None:
     height, width = bayer.shape
     output[...] = 0
@@ -94,10 +90,6 @@ def _demosaic_bgr_into(bayer: np.ndarray, output: np.ndarray, pattern: str) -> N
     output[..., 0] = blue.astype(bayer.dtype, copy=False)
     output[..., 1] = green.astype(bayer.dtype, copy=False)
     output[..., 2] = red.astype(bayer.dtype, copy=False)
-
-
-def _demosaic_bgr_fast_into(bayer: np.ndarray, output: np.ndarray, pattern: str) -> None:
-    _demosaic_bgr_into(bayer, output, pattern)
 
 
 def _int_avg2(a: int, b: int) -> int:
