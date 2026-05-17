@@ -1,0 +1,32 @@
+[project]
+name = "bilinear"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ryota MAEDA", email = "maeda.ryota.elerac@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.4.5",
+    "opencv-python>=4.13.0.92",
+]
+
+[project.scripts]
+bilinear = "bilinear:main"
+
+[build-system]
+requires = [
+    "scikit-build-core>=0.12",
+    "nanobind>=2.12.0",
+]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["src/bilinear"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
