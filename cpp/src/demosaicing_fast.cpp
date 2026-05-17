@@ -47,7 +47,6 @@ T avg4(T a, T b, T c, T d) {
 }
 
 constexpr std::size_t kParallelMinPixels = 1024 * 1024;
-constexpr std::size_t kParallelMaxWorkers = 8;
 
 std::size_t red_blue_pair_count(std::size_t first_y, std::size_t height) {
     if (first_y + 2 >= height) {
@@ -66,7 +65,7 @@ std::size_t choose_parallel_workers(std::size_t pair_count, std::size_t height, 
         return 1;
     }
 
-    return std::min<std::size_t>({pair_count, kParallelMaxWorkers, static_cast<std::size_t>(hardware_threads)});
+    return std::min<std::size_t>(pair_count, static_cast<std::size_t>(hardware_threads));
 }
 
 class ParallelRowPool {
@@ -182,7 +181,7 @@ std::size_t max_thread_pool_workers() {
     if (hardware_threads <= 1) {
         return 1;
     }
-    return std::min<std::size_t>({kParallelMaxWorkers, static_cast<std::size_t>(hardware_threads)});
+    return static_cast<std::size_t>(hardware_threads);
 }
 
 ParallelRowPool &parallel_row_pool() {
