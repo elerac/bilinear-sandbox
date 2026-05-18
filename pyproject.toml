@@ -1,5 +1,5 @@
 [project]
-name = "bilinear"
+name = "fastimg"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -20,21 +20,21 @@ build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
-wheel.packages = ["src/bilinear"]
+wheel.packages = ["src/fastimg"]
 sdist.include = [
     "CMakeLists.txt",
     "cpp/**",
 ]
 
 [tool.scikit-build.messages]
-after-success = "bilinear wheel built successfully."
+after-success = "fastimg wheel built successfully."
 
 [[tool.scikit-build.overrides]]
 if.failed = true
 wheel.cmake = false
 wheel.py-api = "py3"
 messages.after-success = """
-Native extension build failed, so bilinear was built as a pure Python wheel.
+Native extension build failed, so fastimg was built as a pure Python wheel.
 The package will work, but demosaicing operations will be slower.
 """
 

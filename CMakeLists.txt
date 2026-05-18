@@ -21,4 +21,4 @@ target_compile_features(_native PRIVATE cxx_std_17)
 target_include_directories(_native PRIVATE cpp/include)
 target_link_libraries(_native PRIVATE Threads::Threads)
 
-install(TARGETS _native LIBRARY DESTINATION bilinear)
+install(TARGETS _native LIBRARY DESTINATION fastimg)

@@ -1,10 +1,10 @@
-# bilinear
+# fastimg
 
-`bilinear` is a small Python package for bilinear Bayer demosaicing. It mirrors
+`fastimg` is a small Python package for bilinear Bayer demosaicing. It mirrors
 the simple OpenCV call shape:
 
 ```python
-from bilinear import demosaicing
+from fastimg import demosaicing
 
 bgr = demosaicing(bayer, code)
 ```
@@ -41,7 +41,7 @@ Unsupported dimensions, dtypes, and conversion codes raise `ValueError`.
 
 ## Backend Selection
 
-Backend selection is controlled by `BILINEAR_BACKEND`:
+Backend selection is controlled by `FASTIMG_BACKEND`:
 
 | Value | Behavior |
 | :---- | :------- |
@@ -52,12 +52,12 @@ Backend selection is controlled by `BILINEAR_BACKEND`:
 Examples:
 
 ```bash
-python -c "import bilinear; print(bilinear.backend())"
-BILINEAR_BACKEND=native uv run python scripts/benchmark.py
-BILINEAR_BACKEND=python uv run pytest
+python -c "import fastimg; print(fastimg.backend())"
+FASTIMG_BACKEND=native uv run python scripts/benchmark.py
+FASTIMG_BACKEND=python uv run pytest
 ```
 
-Use `BILINEAR_BACKEND=native` in CI or benchmarking when native performance is
+Use `FASTIMG_BACKEND=native` in CI or benchmarking when native performance is
 required. The default `auto` mode keeps the package importable on platforms
 where the extension is unavailable.
 
@@ -75,9 +75,9 @@ Run tests:
 
 ```bash
 uv run --locked pytest
-BILINEAR_BACKEND=python uv run --locked pytest
-BILINEAR_BACKEND=native uv run --locked pytest
-BILINEAR_BACKEND=auto uv run --locked pytest
+FASTIMG_BACKEND=python uv run --locked pytest
+FASTIMG_BACKEND=native uv run --locked pytest
+FASTIMG_BACKEND=auto uv run --locked pytest
 ```
 
 Build a local wheel:
@@ -96,21 +96,21 @@ The benchmark's default `--dtype both` runs `uint8`, `uint16`, `float32`, and
 `float64`. It uses `cv2.demosaicing` for integer inputs and a `cv2.filter2D`
 bilinear baseline for floating-point inputs, because OpenCV's Bayer demosaicing
 accepts only 8-bit and 16-bit integer input. OpenCV is a development dependency
-for tests and scripts, not a runtime dependency of `bilinear`.
+for tests and scripts, not a runtime dependency of `fastimg`.
 
 ## Project Layout
 
 ```text
-src/bilinear/
+src/fastimg/
   api.py          public validation and dispatch
-  _backend.py     BILINEAR_BACKEND selection
+  _backend.py     FASTIMG_BACKEND selection
   _native.pyi     internal native stub
   _python/        pure Python fallback implementation
   demosaicing.py  compatibility re-export
 
 cpp/
   bindings/_native.cpp
-  include/bilinear/demosaicing.hpp
+  include/fastimg/demosaicing.hpp
   src/demosaicing.cpp
 
 tests/

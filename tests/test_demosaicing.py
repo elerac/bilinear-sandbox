@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import pytest
 
-from bilinear import demosaicing
+from fastimg import demosaicing
 
 
 COLOR_CODES = [

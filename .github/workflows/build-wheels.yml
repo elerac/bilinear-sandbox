@@ -37,7 +37,7 @@ jobs:
         env:
           CIBW_BUILD: ${{ matrix.platform.build }}
           CIBW_TEST_COMMAND: python -m pytest {project}/tests
-          CIBW_TEST_ENVIRONMENT: BILINEAR_BACKEND=native
+          CIBW_TEST_ENVIRONMENT: FASTIMG_BACKEND=native
           CIBW_TEST_REQUIRES: pytest opencv-python-headless
           CIBW_ENVIRONMENT_MACOS: MACOSX_DEPLOYMENT_TARGET=11.0
         with:

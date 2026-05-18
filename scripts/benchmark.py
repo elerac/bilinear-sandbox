@@ -9,7 +9,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from bilinear import demosaicing
+from fastimg import demosaicing
 from image_utils import diff_stats, make_bayer_mosaic
 
 
@@ -29,7 +29,7 @@ _PATTERN_POSITIONS = {
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Benchmark bilinear.demosaicing against OpenCV.")
+    parser = argparse.ArgumentParser(description="Benchmark fastimg.demosaicing against OpenCV.")
     parser.add_argument("--image", type=Path, default=Path("curtains.jpg"))
     parser.add_argument("--pattern", choices=sorted(_BGR_CODES), default="RGGB")
     parser.add_argument("--dtype", choices=["uint8", "uint16", "float32", "float64", "both"], default="both")
@@ -96,7 +96,7 @@ def run_benchmark_section(
     iterations: int,
     include_reference: bool,
 ) -> None:
-    bilinear_result, bilinear_times = benchmark(
+    fastimg_result, fastimg_times = benchmark(
         lambda: demosaicing(mosaic, code),
         warmup=warmup,
         iterations=iterations,
@@ -105,14 +105,14 @@ def run_benchmark_section(
     reference_result: np.ndarray | None = None
     reference_times: list[float] | None = None
     if include_reference:
-        from bilinear._python import demosaicing as python_demosaicing
+        from fastimg._python import demosaicing as python_demosaicing
 
         reference_result, reference_times = benchmark(
             lambda: python_demosaicing._demosaic_bgr(mosaic, pattern),
             warmup=warmup,
             iterations=iterations,
         )
-    reference_stats = diff_stats(bilinear_result, reference_result) if reference_result is not None else None
+    reference_stats = diff_stats(fastimg_result, reference_result) if reference_result is not None else None
 
     if not np.issubdtype(mosaic.dtype, np.floating):
         opencv_label = "opencv"
@@ -131,22 +131,22 @@ def run_benchmark_section(
 
     print(f"dtype: {mosaic.dtype}")
     print(f"bayer shape: {mosaic.shape}, dtype: {mosaic.dtype}")
-    print_timing("bilinear", bilinear_times)
+    print_timing("fastimg", fastimg_times)
     if reference_times is not None:
-        print_timing("bilinear reference", reference_times)
+        print_timing("fastimg reference", reference_times)
     print_timing(opencv_label, opencv_times)
     if reference_times is not None:
         print(
-            "bilinear vs reference speedup: "
-            f"{statistics.median(reference_times) / statistics.median(bilinear_times):.2f}x"
+            "fastimg vs reference speedup: "
+            f"{statistics.median(reference_times) / statistics.median(fastimg_times):.2f}x"
         )
     print(
-        f"bilinear/{opencv_label} speed ratio: "
-        f"{statistics.median(bilinear_times) / statistics.median(opencv_times):.2f}x"
+        f"fastimg/{opencv_label} speed ratio: "
+        f"{statistics.median(fastimg_times) / statistics.median(opencv_times):.2f}x"
     )
-    print_diff_stats(f"bilinear vs {opencv_label}", diff_stats(bilinear_result, opencv_result))
+    print_diff_stats(f"fastimg vs {opencv_label}", diff_stats(fastimg_result, opencv_result))
     if reference_stats is not None:
-        print_diff_stats("bilinear vs reference", reference_stats)
+        print_diff_stats("fastimg vs reference", reference_stats)
 
 
 def opencv_filter2d_demosaic_bgr(bayer: np.ndarray, pattern: str) -> np.ndarray:

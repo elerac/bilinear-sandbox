@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace bilinear {
+namespace fastimg {
 
 enum class BayerPattern {
     RGGB,
@@ -47,4 +47,4 @@ void demosaic_bgr(
     BayerPattern pattern
 );
 
-}  // namespace bilinear
+}  // namespace fastimg

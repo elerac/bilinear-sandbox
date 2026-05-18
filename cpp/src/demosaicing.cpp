@@ -1,4 +1,4 @@
-#include "bilinear/demosaicing.hpp"
+#include "fastimg/demosaicing.hpp"
 
 #include <stdexcept>
 
@@ -14,12 +14,12 @@
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
 #include <arm_neon.h>
-#define BILINEAR_HAS_NEON 1
+#define FASTIMG_HAS_NEON 1
 #else
-#define BILINEAR_HAS_NEON 0
+#define FASTIMG_HAS_NEON 0
 #endif
 
-namespace bilinear {
+namespace fastimg {
 namespace {
 
 template <typename T>
@@ -207,7 +207,7 @@ void parallel_for_chunks(std::size_t count, std::size_t worker_count, Work work)
     pool.run_chunks(count, worker_count, work);
 }
 
-#if BILINEAR_HAS_NEON
+#if FASTIMG_HAS_NEON
 uint8x16_t avg4_u8x16(uint8x16_t a, uint8x16_t b, uint8x16_t c, uint8x16_t d) {
     uint16x8_t low = vaddq_u16(
         vaddl_u8(vget_low_u8(a), vget_low_u8(b)),
@@ -371,7 +371,7 @@ void write_red_blue_row_pair(
     T *red_pair = red_out + x * 3;
     T *blue_pair = blue_out + x * 3;
 
-#if BILINEAR_HAS_NEON
+#if FASTIMG_HAS_NEON
     if constexpr (std::is_same_v<T, std::uint8_t>) {
         const uint8x16_t red_site_mask = RedX ? even_lane_mask_u8() : odd_lane_mask_u8();
         const uint8x16_t blue_site_mask = RedX ? odd_lane_mask_u8() : even_lane_mask_u8();
@@ -763,4 +763,4 @@ void demosaic_bgr(
     demosaic_bgr_impl(bayer, output, height, width, pattern);
 }
 
-}  // namespace bilinear
+}  // namespace fastimg

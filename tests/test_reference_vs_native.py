@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import pytest
 
-from bilinear._python import demosaicing as python_demosaicing
+from fastimg._python import demosaicing as python_demosaicing
 
 
 COLOR_CODES = [
@@ -20,12 +20,12 @@ COLOR_CODES = [
 
 @pytest.fixture(autouse=True)
 def restore_backend_after_test() -> None:
-    original_backend = os.environ.get("BILINEAR_BACKEND")
+    original_backend = os.environ.get("FASTIMG_BACKEND")
     yield
     if original_backend is None:
-        os.environ.pop("BILINEAR_BACKEND", None)
+        os.environ.pop("FASTIMG_BACKEND", None)
     else:
-        os.environ["BILINEAR_BACKEND"] = original_backend
+        os.environ["FASTIMG_BACKEND"] = original_backend
     reload_api_modules()
 
 
@@ -97,7 +97,7 @@ def test_backend_modes(backend: str) -> None:
 
 
 def run_with_backend(backend: str, src: np.ndarray, code: int) -> np.ndarray:
-    os.environ["BILINEAR_BACKEND"] = backend
+    os.environ["FASTIMG_BACKEND"] = backend
     api = reload_api_modules()
     return api.demosaicing(src, code)
 
@@ -128,15 +128,15 @@ def assert_demosaicing_matches(actual: np.ndarray, expected: np.ndarray) -> None
 
 
 def reload_api_modules():
-    import bilinear
-    import bilinear._backend
-    import bilinear.api
+    import fastimg
+    import fastimg._backend
+    import fastimg.api
 
-    importlib.reload(bilinear._backend)
-    api = importlib.reload(bilinear.api)
-    demosaicing_module = importlib.import_module("bilinear.demosaicing")
+    importlib.reload(fastimg._backend)
+    api = importlib.reload(fastimg.api)
+    demosaicing_module = importlib.import_module("fastimg.demosaicing")
     importlib.reload(demosaicing_module)
-    importlib.reload(bilinear)
+    importlib.reload(fastimg)
     return api
 
 

@@ -7,7 +7,7 @@ from types import ModuleType
 
 
 _VALID_BACKENDS = {"auto", "native", "python"}
-_ENV_NAME = "BILINEAR_BACKEND"
+_ENV_NAME = "FASTIMG_BACKEND"
 
 _requested_backend = os.environ.get(_ENV_NAME, "auto").lower()
 
@@ -29,7 +29,7 @@ if _requested_backend != "python":
             ) from exc
 
         warnings.warn(
-            "bilinear native extension is not available; using the pure Python backend. "
+            "fastimg native extension is not available; using the pure Python backend. "
             "The package will work, but demosaicing operations will be slower.",
             RuntimeWarning,
             stacklevel=2,

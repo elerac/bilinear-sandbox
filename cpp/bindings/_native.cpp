@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "bilinear/demosaicing.hpp"
+#include "fastimg/demosaicing.hpp"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -34,7 +34,7 @@ template <typename T>
 void demosaic_bgr_into(BayerImage<T> bayer, BgrOutput<T> output, std::string_view pattern_name) {
     check_output_shape(bayer, output);
 
-    const bilinear::BayerPattern pattern = bilinear::parse_pattern(pattern_name);
+    const fastimg::BayerPattern pattern = fastimg::parse_pattern(pattern_name);
     const std::size_t height = bayer.shape(0);
     const std::size_t width = bayer.shape(1);
     const T *bayer_ptr = bayer.data();
@@ -42,7 +42,7 @@ void demosaic_bgr_into(BayerImage<T> bayer, BgrOutput<T> output, std::string_vie
 
     {
         nb::gil_scoped_release release;
-        bilinear::demosaic_bgr(bayer_ptr, output_ptr, height, width, pattern);
+        fastimg::demosaic_bgr(bayer_ptr, output_ptr, height, width, pattern);
     }
 }
 
